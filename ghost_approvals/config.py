@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     telegram_bot_token: str = Field(..., alias="TELEGRAM_BOT_TOKEN")
     alchemy_api_key: str = Field(..., alias="ALCHEMY_API_KEY")
+    etherscan_api_key: str = Field(..., alias="ETHERSCAN_API_KEY")
     groq_api_key: str = Field(..., alias="GROQ_API_KEY")
 
     goplus_api_key: str | None = Field(None, alias="GOPLUS_API_KEY")
