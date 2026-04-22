@@ -68,12 +68,9 @@ class DB:
     def __init__(self, db_path: Path) -> None:
         self.db_path = db_path
 
-    async def _conn(self) -> aiosqlite.Connection:
-        return await aiosqlite.connect(self.db_path)
-
     # users ------------------------------------------------------------------
     async def upsert_user(self, tg_id: int, username: str | None, ts: int) -> None:
-        async with await self._conn() as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 """
                 INSERT INTO users (telegram_id, username, first_seen_ts, last_active_ts)
@@ -89,7 +86,7 @@ class DB:
     # monitored wallets -------------------------------------------------------
     async def add_monitored(self, tg_id: int, address: str, ts: int) -> None:
         address = address.lower()
-        async with await self._conn() as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 """
                 INSERT OR IGNORE INTO monitored_wallets
@@ -101,7 +98,7 @@ class DB:
             await db.commit()
 
     async def remove_monitored(self, tg_id: int, address: str) -> None:
-        async with await self._conn() as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 "DELETE FROM monitored_wallets WHERE telegram_id=? AND address=?",
                 (tg_id, address.lower()),
@@ -109,7 +106,7 @@ class DB:
             await db.commit()
 
     async def list_monitored(self, tg_id: int) -> list[str]:
-        async with await self._conn() as db:
+        async with aiosqlite.connect(self.db_path) as db:
             async with db.execute(
                 "SELECT address FROM monitored_wallets WHERE telegram_id=?",
                 (tg_id,),
@@ -118,7 +115,7 @@ class DB:
         return [r[0] for r in rows]
 
     async def list_all_monitored(self) -> list[tuple[int, str]]:
-        async with await self._conn() as db:
+        async with aiosqlite.connect(self.db_path) as db:
             async with db.execute(
                 "SELECT telegram_id, address FROM monitored_wallets"
             ) as cur:
@@ -128,7 +125,7 @@ class DB:
     async def update_monitored_scan(
         self, tg_id: int, address: str, score: int, ts: int
     ) -> None:
-        async with await self._conn() as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 """
                 UPDATE monitored_wallets
@@ -143,7 +140,7 @@ class DB:
     async def get_contract_cache(
         self, address: str, chain: str
     ) -> dict[str, Any] | None:
-        async with await self._conn() as db:
+        async with aiosqlite.connect(self.db_path) as db:
             async with db.execute(
                 """
                 SELECT name, is_verified, is_malicious, created_block, created_ts,
@@ -180,7 +177,7 @@ class DB:
         data: dict[str, Any] | None,
         updated_ts: int,
     ) -> None:
-        async with await self._conn() as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 """
                 INSERT INTO contract_cache
@@ -222,7 +219,7 @@ class DB:
         approval_count: int,
         ts: int,
     ) -> None:
-        async with await self._conn() as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 """
                 INSERT INTO scan_history
