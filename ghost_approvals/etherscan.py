@@ -80,6 +80,9 @@ class Etherscan:
                 try:
                     resp = await self._client.get(ETHERSCAN_V2_URL, params=params)
                     if resp.status_code == 429:
+                        last_error = EtherscanError(
+                            f"HTTP 429 Too Many Requests (attempt {attempt + 1})"
+                        )
                         await asyncio.sleep(1.0 + attempt)
                         continue
                     resp.raise_for_status()
