@@ -9,8 +9,9 @@ from groq import AsyncGroq
 from .chains import DEFAULT_CHAINS
 from .db import DB
 from .enrichment import enrich_approvals
+from .etherscan import Etherscan
 from .explainer import explain_approvals
-from .models import Approval, ScanResult
+from .models import ScanResult
 from .prices import get_prices_usd
 from .rpc import AlchemyRPC
 from .score import compute_security_score, enrich_risk
@@ -19,6 +20,7 @@ log = logging.getLogger(__name__)
 
 
 async def run_full_scan(
+    etherscan: Etherscan,
     rpc: AlchemyRPC,
     db: DB,
     groq_client: AsyncGroq,
@@ -29,7 +31,7 @@ async def run_full_scan(
 ) -> ScanResult:
     from .scanner import scan_wallet
 
-    approvals, errors = await scan_wallet(rpc, address, chains)
+    approvals, errors = await scan_wallet(etherscan, rpc, address, chains)
     log.info("scan %s: %d raw approvals across %d chains", address, len(approvals), len(chains))
 
     if approvals:
