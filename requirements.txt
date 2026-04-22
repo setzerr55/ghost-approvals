@@ -7,5 +7,7 @@ pydantic-settings==2.6.1
 aiosqlite==0.20.0
 eth-utils==5.1.0
 eth-abi==5.1.0
+eth-hash[pycryptodome]==0.8.0
+pycryptodome==3.21.0
 apscheduler==3.10.4
 pillow==11.0.0
