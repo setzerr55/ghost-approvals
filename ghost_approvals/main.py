@@ -9,6 +9,7 @@ import signal
 from .bot import build_application
 from .config import get_settings
 from .db import DB, init_db
+from .etherscan import Etherscan
 from .rpc import AlchemyRPC
 
 
@@ -23,8 +24,9 @@ async def _amain() -> None:
     await init_db(settings.db_path)
     db = DB(settings.db_path)
     rpc = AlchemyRPC(settings.alchemy_api_key)
+    etherscan = Etherscan(settings.etherscan_api_key)
 
-    app = build_application(settings, db, rpc)
+    app = build_application(settings, db, rpc, etherscan)
 
     stop_event = asyncio.Event()
 
@@ -54,6 +56,7 @@ async def _amain() -> None:
         await app.stop()
         await app.shutdown()
         await rpc.close()
+        await etherscan.close()
 
 
 def main() -> None:

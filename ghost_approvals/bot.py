@@ -22,6 +22,7 @@ from .card import render_score_card
 from .chains import CHAINS
 from .config import Settings
 from .db import DB
+from .etherscan import Etherscan
 from .formatting import format_scan_result, welcome_text
 from .pipeline import run_full_scan
 from .revoker import group_revoke_links
@@ -44,6 +45,10 @@ def _db(ctx: ContextTypes.DEFAULT_TYPE) -> DB:
 
 def _rpc(ctx: ContextTypes.DEFAULT_TYPE) -> AlchemyRPC:
     return ctx.application.bot_data["rpc"]
+
+
+def _etherscan(ctx: ContextTypes.DEFAULT_TYPE) -> Etherscan:
+    return ctx.application.bot_data["etherscan"]
 
 
 def _groq(ctx: ContextTypes.DEFAULT_TYPE) -> AsyncGroq:
@@ -109,7 +114,7 @@ async def cmd_scan(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     try:
         result = await run_full_scan(
-            _rpc(ctx), _db(ctx), _groq(ctx), addr
+            _etherscan(ctx), _rpc(ctx), _db(ctx), _groq(ctx), addr
         )
     except Exception as exc:  # noqa: BLE001
         log.exception("scan failed for %s", addr)
@@ -272,13 +277,14 @@ async def on_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 async def weekly_monitoring(ctx: ContextTypes.DEFAULT_TYPE) -> None:
     db = _db(ctx)
     rpc = _rpc(ctx)
+    etherscan = _etherscan(ctx)
     groq_client = _groq(ctx)
     pairs = await db.list_all_monitored()
     log.info("weekly monitoring: %d wallets", len(pairs))
 
     for tg_id, addr in pairs:
         try:
-            result = await run_full_scan(rpc, db, groq_client, addr)
+            result = await run_full_scan(etherscan, rpc, db, groq_client, addr)
         except Exception as exc:  # noqa: BLE001
             log.warning("weekly scan failed %s: %s", addr, exc)
             continue
@@ -315,7 +321,9 @@ async def weekly_monitoring(ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ---- wiring ----------------------------------------------------------------
 
-def build_application(settings: Settings, db: DB, rpc: AlchemyRPC) -> Application:
+def build_application(
+    settings: Settings, db: DB, rpc: AlchemyRPC, etherscan: Etherscan
+) -> Application:
     app = (
         Application.builder()
         .token(settings.telegram_bot_token)
@@ -323,6 +331,7 @@ def build_application(settings: Settings, db: DB, rpc: AlchemyRPC) -> Applicatio
     )
     app.bot_data["db"] = db
     app.bot_data["rpc"] = rpc
+    app.bot_data["etherscan"] = etherscan
     app.bot_data["groq"] = AsyncGroq(api_key=settings.groq_api_key)
     app.bot_data["settings"] = settings
 
